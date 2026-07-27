@@ -39,6 +39,20 @@ npm run dev              # http://localhost:5173
 
 Sign up with any email/password (8+ characters) to hatch your pet.
 
+## Features
+
+- Add, edit, delete, and complete tasks with a category and effort level
+  (quick / medium / big).
+- Mark a task "repeats daily" for routines like meds or checking the mail —
+  it automatically reappears unchecked each morning.
+- A pet that levels up, gains happiness, and evolves through visual stages
+  (egg → hatchling → kid → teen → adult) as you complete tasks, plus a daily
+  streak counter.
+- Installable as a home-screen app on both iOS and Android (PWA manifest +
+  icons), and works as a normal responsive site in any browser.
+- Rate-limited auth endpoints and standard security headers (helmet) on the
+  API.
+
 ## How the pet mechanics work
 
 - Each task has an effort level (quick / medium / big) that determines the
@@ -49,6 +63,15 @@ Sign up with any email/password (8+ characters) to hatch your pet.
   task) increments a streak; skipping a day resets it.
 - Happiness decays a little per idle day but never drops below a floor, so
   a missed day never feels like starting over.
+- Recurring tasks reset to incomplete lazily (checked on fetch, no cron
+  needed) once their `completedAt` is no longer "today".
+
+## Tests
+
+```bash
+cd server
+npm test   # unit tests for the pet leveling/reward logic
+```
 
 ## Production notes
 

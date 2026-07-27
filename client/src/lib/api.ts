@@ -42,6 +42,7 @@ export interface Task {
   effort: Effort;
   completed: boolean;
   completedAt: string | null;
+  recurring: boolean;
   createdAt: string;
 }
 
@@ -62,8 +63,19 @@ export function getTasks(token: string) {
   return request<Task[]>("/tasks", {}, token);
 }
 
-export function createTask(token: string, input: { title: string; category: string; effort: Effort }) {
+export interface TaskInput {
+  title: string;
+  category: string;
+  effort: Effort;
+  recurring: boolean;
+}
+
+export function createTask(token: string, input: TaskInput) {
   return request<Task>("/tasks", { method: "POST", body: JSON.stringify(input) }, token);
+}
+
+export function updateTask(token: string, id: string, input: Partial<TaskInput>) {
+  return request<Task>(`/tasks/${id}`, { method: "PATCH", body: JSON.stringify(input) }, token);
 }
 
 export function completeTask(token: string, id: string) {

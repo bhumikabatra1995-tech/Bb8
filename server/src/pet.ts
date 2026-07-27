@@ -1,5 +1,6 @@
 import type { Pet } from "@prisma/client";
 import { prisma } from "./db.js";
+import { daysBetween } from "./date.js";
 
 const EFFORT_REWARDS: Record<string, { xp: number; happiness: number }> = {
   quick: { xp: 10, happiness: 6 },
@@ -21,12 +22,6 @@ export function stageForLevel(level: number): string {
   if (level <= 5) return "kid";
   if (level <= 9) return "teen";
   return "adult";
-}
-
-function daysBetween(a: Date, b: Date): number {
-  const startOfA = Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), a.getUTCDate());
-  const startOfB = Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate());
-  return Math.round((startOfB - startOfA) / (1000 * 60 * 60 * 24));
 }
 
 const HAPPINESS_DECAY_PER_IDLE_DAY = 8;

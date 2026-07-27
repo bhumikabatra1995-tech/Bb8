@@ -1,24 +1,34 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "../lib/AuthContext";
-import { getPet, getTasks, createTask, completeTask, deleteTask, renamePet } from "../lib/api";
-import type { PetState, Task, Effort } from "../lib/api";
+import { getPet, getTasks, createTask, completeTask, deleteTask, renamePet, updateTask, ApiError } from "../lib/api";
+import type { PetState, Task, TaskInput } from "../lib/api";
 import { PetWidget } from "../components/PetWidget";
 import { TaskForm } from "../components/TaskForm";
 import { TaskList } from "../components/TaskList";
+
+function errorMessage(err: unknown): string {
+  return err instanceof ApiError ? err.message : "Something went wrong. Please try again.";
+}
 
 export function Dashboard() {
   const { token, user, signOut } = useAuth();
   const [pet, setPet] = useState<PetState | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [celebration, setCelebration] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     if (!token) return;
-    const [petData, taskData] = await Promise.all([getPet(token), getTasks(token)]);
-    setPet(petData);
-    setTasks(taskData);
-    setLoading(false);
+    try {
+      const [petData, taskData] = await Promise.all([getPet(token), getTasks(token)]);
+      setPet(petData);
+      setTasks(taskData);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setLoading(false);
+    }
   }, [token]);
 
   useEffect(() => {
@@ -31,28 +41,59 @@ export function Dashboard() {
     return () => clearTimeout(timeout);
   }, [celebration]);
 
+  useEffect(() => {
+    if (!error) return;
+    const timeout = setTimeout(() => setError(null), 4000);
+    return () => clearTimeout(timeout);
+  }, [error]);
+
   if (!token) return null;
 
-  async function handleAdd(input: { title: string; category: string; effort: Effort }) {
-    const task = await createTask(token!, input);
-    setTasks((prev) => [task, ...prev]);
+  async function handleAdd(input: TaskInput) {
+    try {
+      const task = await createTask(token!, input);
+      setTasks((prev) => [task, ...prev]);
+    } catch (err) {
+      setError(errorMessage(err));
+    }
   }
 
   async function handleComplete(id: string) {
-    const { task, pet: updatedPet } = await completeTask(token!, id);
-    setTasks((prev) => prev.map((t) => (t.id === id ? task : t)));
-    setPet(updatedPet);
-    setCelebration("Nice work! Your pet is thriving 🎉");
+    try {
+      const { task, pet: updatedPet } = await completeTask(token!, id);
+      setTasks((prev) => prev.map((t) => (t.id === id ? task : t)));
+      setPet(updatedPet);
+      setCelebration("Nice work! Your pet is thriving 🎉");
+    } catch (err) {
+      setError(errorMessage(err));
+    }
   }
 
   async function handleDelete(id: string) {
-    await deleteTask(token!, id);
-    setTasks((prev) => prev.filter((t) => t.id !== id));
+    try {
+      await deleteTask(token!, id);
+      setTasks((prev) => prev.filter((t) => t.id !== id));
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
+  async function handleEdit(id: string, input: Partial<TaskInput>) {
+    try {
+      const task = await updateTask(token!, id, input);
+      setTasks((prev) => prev.map((t) => (t.id === id ? task : t)));
+    } catch (err) {
+      setError(errorMessage(err));
+    }
   }
 
   async function handleRename(name: string) {
-    const updated = await renamePet(token!, name);
-    setPet(updated);
+    try {
+      const updated = await renamePet(token!, name);
+      setPet(updated);
+    } catch (err) {
+      setError(errorMessage(err));
+    }
   }
 
   const incomplete = tasks.filter((t) => !t.completed);
@@ -76,6 +117,11 @@ export function Dashboard() {
             {celebration}
           </div>
         )}
+        {error && (
+          <div className="mb-4 rounded-lg bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 text-sm px-4 py-2 text-center">
+            {error}
+          </div>
+        )}
 
         {loading || !pet ? (
           <p className="text-center text-slate-400 py-12">Loading…</p>
@@ -88,7 +134,7 @@ export function Dashboard() {
 
               <div className="mt-4">
                 <h2 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">To do ({incomplete.length})</h2>
-                <TaskList tasks={incomplete} onComplete={handleComplete} onDelete={handleDelete} />
+                <TaskList tasks={incomplete} onComplete={handleComplete} onDelete={handleDelete} onEdit={handleEdit} />
               </div>
 
               {completed.length > 0 && (
@@ -96,7 +142,7 @@ export function Dashboard() {
                   <h2 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">
                     Done today ({completed.length})
                   </h2>
-                  <TaskList tasks={completed} onComplete={handleComplete} onDelete={handleDelete} />
+                  <TaskList tasks={completed} onComplete={handleComplete} onDelete={handleDelete} onEdit={handleEdit} />
                 </div>
               )}
             </div>

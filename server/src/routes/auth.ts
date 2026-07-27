@@ -1,10 +1,20 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
+import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { signToken } from "../auth.js";
 
 export const authRouter = Router();
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many attempts. Please try again later." },
+});
+authRouter.use(authLimiter);
 
 const credentialsSchema = z.object({
   email: z.string().trim().toLowerCase().email(),

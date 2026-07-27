@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import { authRouter } from "./routes/auth.js";
 import { tasksRouter } from "./routes/tasks.js";
 import { petRouter } from "./routes/pet.js";
@@ -8,6 +9,7 @@ import { petRouter } from "./routes/pet.js";
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 
+app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173" }));
 app.use(express.json());
 

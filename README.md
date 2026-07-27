@@ -8,21 +8,26 @@ punishing you into a shame spiral.
 
 ## Stack
 
-- **server/** — Express + TypeScript API, Prisma ORM on SQLite, JWT auth.
-- **client/** — React + TypeScript + Vite, Tailwind CSS, responsive (works
-  well on mobile browsers today; the API is a clean base for a native app
-  later).
+- **server/** — Express + TypeScript API, Prisma ORM on Postgres, JWT auth.
+- **client/** — React + TypeScript + Vite, Tailwind CSS, responsive and
+  installable as a home-screen app (PWA) on both iOS and Android.
 
-Accounts + cloud sync: tasks and pet state live server-side per user, so
-logging in from any device shows the same pet and task list.
+Accounts + cloud sync: tasks and pet state live in a shared Postgres
+database per user, so logging in from any device (or a second phone) shows
+the same pet and task list. See "Deploying" below to get this running on
+real phones instead of just localhost.
 
 ## Running locally
+
+You need a Postgres database to point at — either install Postgres locally,
+or just use a free hosted one (e.g. [Neon](https://neon.tech)) even for dev.
 
 ### 1. Server
 
 ```bash
 cd server
-cp .env.example .env   # edit JWT_SECRET for anything beyond local dev
+cp .env.example .env   # set DATABASE_URL to your Postgres connection string,
+                        # and JWT_SECRET to any long random string
 npm install
 npx prisma migrate dev
 npm run dev             # http://localhost:4000
@@ -73,8 +78,14 @@ cd server
 npm test   # unit tests for the pet leveling/reward logic
 ```
 
+## Deploying (so it works on your phone, with data that persists)
+
+See `DEPLOYING.md` for the full step-by-step walkthrough: free hosted
+Postgres (Neon) + free API host (Render) + free static host (Vercel) for
+the client, then "Add to Home Screen" on each phone.
+
 ## Production notes
 
-- SQLite is used for simplicity; swapping `server/prisma/schema.prisma`'s
-  `datasource` to Postgres is a one-line change plus a fresh migration.
 - `JWT_SECRET` must be set to a long random value outside local dev.
+- `CLIENT_ORIGIN` on the server must exactly match the deployed frontend's
+  URL (CORS will otherwise reject requests from it).

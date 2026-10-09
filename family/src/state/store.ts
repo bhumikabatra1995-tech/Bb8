@@ -28,6 +28,8 @@ type State = {
   items: Item[]
   introSeen: string | null
   sync: SyncStatus
+  syncError: string | null
+  pending: number
 }
 
 const KEY = 'family-app-v2'
@@ -44,6 +46,8 @@ const empty: State = {
   items: [],
   introSeen: null,
   sync: remote ? 'connecting' : 'device',
+  syncError: null,
+  pending: 0,
 }
 
 const load = (): State => {
@@ -105,21 +109,90 @@ const fromRow = {
 
 const syncChannel = remote?.channel('family-sync')
 
+type Table = keyof typeof fromRow
+type Op = { table: Table; op: 'insert' | 'update'; id: string; row: Record<string, unknown> }
+
+// Saves wait in an outbox (kept on the phone) until the database confirms
+// them, so nothing is lost to a bad signal or a closed app.
+const OUTBOX = 'family-outbox-v1'
+let outbox: Op[] = (() => {
+  try {
+    return JSON.parse(localStorage.getItem(OUTBOX) ?? '[]') as Op[]
+  } catch {
+    return []
+  }
+})()
+const saveOutbox = () => {
+  try {
+    localStorage.setItem(OUTBOX, JSON.stringify(outbox))
+  } catch {
+    /* ignore */
+  }
+}
+
+// Ids written from this phone recently: a refresh that raced the save must
+// not make them disappear from the screen.
+const recent = new Map<string, number>()
+const RECENT_MS = 2 * 60 * 1000
+
+let flushing: Promise<void> | null = null
+const flush = (): Promise<void> => {
+  if (!remote) return Promise.resolve()
+  if (flushing) return flushing
+  flushing = (async () => {
+    let wrote = false
+    while (outbox.length) {
+      const o = outbox[0]
+      const { error } =
+        o.op === 'insert'
+          ? await remote!.from(o.table).upsert(o.row, { onConflict: 'id' })
+          : await remote!.from(o.table).update(o.row).eq('id', o.id)
+      if (error) {
+        console.warn(`Could not save to ${o.table}; will retry`, error)
+        set({ sync: 'offline', syncError: `${o.table}: ${error.message}`, pending: outbox.length })
+        break
+      }
+      outbox.shift()
+      saveOutbox()
+      wrote = true
+    }
+    if (!outbox.length) set({ syncError: null, pending: 0 })
+    if (wrote) ping()
+  })().finally(() => {
+    flushing = null
+  })
+  return flushing
+}
+
 const pull = async () => {
   if (!remote) return
+  await flush()
   const order = { letters: 'sent_at', questions: 'created_at', answers: 'created_at', points: 'at', events: 'date', scores: 'at', checkins: 'at', items: 'updated_at' } as const
   try {
     const results = await Promise.all(
-      (Object.keys(order) as (keyof typeof order)[]).map(async (table) => {
+      (Object.keys(order) as Table[]).map(async (table) => {
         const { data, error } = await remote!.from(table).select('*').order(order[table], { ascending: table === 'events' }).limit(1000)
         if (error) throw error
-        return [table, (data ?? []).map((r) => (fromRow[table] as (r: unknown) => unknown)(r))] as const
+        return [table, (data ?? []).map((r) => (fromRow[table] as (r: unknown) => { id: string })(r))] as const
       }),
     )
-    set({ ...Object.fromEntries(results), sync: 'cloud' })
+    const now = Date.now()
+    for (const [id, t] of recent) if (now - t > RECENT_MS) recent.delete(id)
+    const keep = new Set([...recent.keys(), ...outbox.map((o) => o.id)])
+    set((s) => {
+      const merged: Record<string, unknown> = { sync: outbox.length ? 'offline' : 'cloud', pending: outbox.length }
+      for (const [table, server] of results) {
+        const local = s[table] as { id: string }[]
+        const serverIds = new Set(server.map((r) => r.id))
+        const localById = new Map(local.map((l) => [l.id, l]))
+        const mine = local.filter((l) => keep.has(l.id) && !serverIds.has(l.id))
+        merged[table] = [...mine, ...server.map((r) => (keep.has(r.id) && localById.get(r.id)) || r)]
+      }
+      return merged as Partial<State>
+    })
   } catch (err) {
     console.warn('Cloud sync failed, using what is saved on this phone', err)
-    set({ sync: 'offline' })
+    set({ sync: 'offline', syncError: err instanceof Error ? err.message : String((err as { message?: string })?.message ?? err) })
   }
 }
 
@@ -130,26 +203,28 @@ const schedulePull = () => {
 }
 
 /** Tell every other open phone to refresh. */
-const ping = () => {
+function ping() {
   syncChannel?.send({ type: 'broadcast', event: 'changed', payload: {} })
 }
 
-const write = async (table: string, row: Record<string, unknown>, op: 'insert' | 'update' = 'insert', id?: string) => {
+const write = (table: Table, row: Record<string, unknown>, op: 'insert' | 'update' = 'insert', id?: string) => {
   if (!remote) return
-  const q = op === 'insert' ? remote.from(table).insert(row) : remote.from(table).update(row).eq('id', id!)
-  const { error } = await q
-  if (error) {
-    console.warn(`Could not save to ${table}`, error)
-    set({ sync: 'offline' })
-    return
-  }
-  ping()
+  const key = (id ?? row.id) as string
+  recent.set(key, Date.now())
+  const same = op === 'update' ? outbox.find((o) => o.table === table && o.id === key) : undefined
+  if (same) same.row = { ...same.row, ...row }
+  else outbox.push({ table, op, id: key, row })
+  saveOutbox()
+  set({ pending: outbox.length })
+  flush()
 }
 
 export const startSync = () => {
   if (!remote || !syncChannel) return
   syncChannel.on('broadcast', { event: 'changed' }, schedulePull).subscribe()
   pull()
+  setInterval(() => outbox.length && flush().then(schedulePull), 15000)
+  window.addEventListener('online', schedulePull)
   window.addEventListener('focus', schedulePull)
   document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && schedulePull())
 }

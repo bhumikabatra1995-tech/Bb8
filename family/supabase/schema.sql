@@ -96,3 +96,21 @@ begin
     execute format('create policy family_update on public.%I for update using (public.family_ok()) with check (public.family_ok())', t);
   end loop;
 end $$;
+
+-- Phone notifications: one row per phone that turned them on.
+create table if not exists public.push_subs (
+  id text primary key,
+  member text not null,
+  endpoint text not null,
+  keys jsonb not null,
+  created_at timestamptz not null default now()
+);
+alter table public.push_subs enable row level security;
+drop policy if exists family_read on public.push_subs;
+drop policy if exists family_insert on public.push_subs;
+drop policy if exists family_update on public.push_subs;
+drop policy if exists family_delete on public.push_subs;
+create policy family_read on public.push_subs for select using (public.family_ok());
+create policy family_insert on public.push_subs for insert with check (public.family_ok());
+create policy family_update on public.push_subs for update using (public.family_ok()) with check (public.family_ok());
+create policy family_delete on public.push_subs for delete using (public.family_ok());

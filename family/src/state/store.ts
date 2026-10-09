@@ -28,6 +28,8 @@ type State = {
   items: Item[]
   introSeen: string | null
   sync: SyncStatus
+  syncError: string | null
+  pending: number
 }
 
 const KEY = 'family-app-v2'
@@ -44,6 +46,8 @@ const empty: State = {
   items: [],
   introSeen: null,
   sync: remote ? 'connecting' : 'device',
+  syncError: null,
+  pending: 0,
 }
 
 const load = (): State => {
@@ -99,27 +103,97 @@ const fromRow = {
   events: (r: any): FamilyEvent => ({ id: r.id, title: r.title, date: r.date, addedBy: r.added_by }),
   scores: (r: any): Score => ({ id: r.id, game: r.game, member: r.member, score: r.score, at: ts(r.at) }),
   items: (r: any): Item => ({ id: r.id, kind: r.kind, by: r.by_id, data: r.data ?? {}, at: ts(r.created_at), updatedAt: ts(r.updated_at) }),
+  push_subs: (r: any) => ({ id: r.id as string }),
   checkins: (r: any): CheckIn => ({ id: r.id, member: r.member, place: r.place, lat: r.lat, lon: r.lon, note: r.note ?? '', at: ts(r.at) }),
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 const syncChannel = remote?.channel('family-sync')
 
+type Table = keyof typeof fromRow
+type Op = { table: Table; op: 'insert' | 'update'; id: string; row: Record<string, unknown> }
+
+// Saves wait in an outbox (kept on the phone) until the database confirms
+// them, so nothing is lost to a bad signal or a closed app.
+const OUTBOX = 'family-outbox-v1'
+let outbox: Op[] = (() => {
+  try {
+    return JSON.parse(localStorage.getItem(OUTBOX) ?? '[]') as Op[]
+  } catch {
+    return []
+  }
+})()
+const saveOutbox = () => {
+  try {
+    localStorage.setItem(OUTBOX, JSON.stringify(outbox))
+  } catch {
+    /* ignore */
+  }
+}
+
+// Ids written from this phone recently: a refresh that raced the save must
+// not make them disappear from the screen.
+const recent = new Map<string, number>()
+const RECENT_MS = 2 * 60 * 1000
+
+let flushing: Promise<void> | null = null
+const flush = (): Promise<void> => {
+  if (!remote) return Promise.resolve()
+  if (flushing) return flushing
+  flushing = (async () => {
+    let wrote = false
+    while (outbox.length) {
+      const o = outbox[0]
+      const { error } =
+        o.op === 'insert'
+          ? await remote!.from(o.table).upsert(o.row, { onConflict: 'id' })
+          : await remote!.from(o.table).update(o.row).eq('id', o.id)
+      if (error) {
+        console.warn(`Could not save to ${o.table}; will retry`, error)
+        set({ sync: 'offline', syncError: `${o.table}: ${error.message}`, pending: outbox.length })
+        break
+      }
+      outbox.shift()
+      saveOutbox()
+      wrote = true
+    }
+    if (!outbox.length) set({ syncError: null, pending: 0 })
+    if (wrote) ping()
+  })().finally(() => {
+    flushing = null
+  })
+  return flushing
+}
+
 const pull = async () => {
   if (!remote) return
+  await flush()
   const order = { letters: 'sent_at', questions: 'created_at', answers: 'created_at', points: 'at', events: 'date', scores: 'at', checkins: 'at', items: 'updated_at' } as const
   try {
     const results = await Promise.all(
       (Object.keys(order) as (keyof typeof order)[]).map(async (table) => {
         const { data, error } = await remote!.from(table).select('*').order(order[table], { ascending: table === 'events' }).limit(1000)
         if (error) throw error
-        return [table, (data ?? []).map((r) => (fromRow[table] as (r: unknown) => unknown)(r))] as const
+        return [table, (data ?? []).map((r) => (fromRow[table] as (r: unknown) => { id: string })(r))] as const
       }),
     )
-    set({ ...Object.fromEntries(results), sync: 'cloud' })
+    const now = Date.now()
+    for (const [id, t] of recent) if (now - t > RECENT_MS) recent.delete(id)
+    const keep = new Set([...recent.keys(), ...outbox.map((o) => o.id)])
+    set((s) => {
+      const merged: Record<string, unknown> = { sync: outbox.length ? 'offline' : 'cloud', pending: outbox.length }
+      for (const [table, server] of results) {
+        const local = s[table] as { id: string }[]
+        const serverIds = new Set(server.map((r) => r.id))
+        const localById = new Map(local.map((l) => [l.id, l]))
+        const mine = local.filter((l) => keep.has(l.id) && !serverIds.has(l.id))
+        merged[table] = [...mine, ...server.map((r) => (keep.has(r.id) && localById.get(r.id)) || r)]
+      }
+      return merged as Partial<State>
+    })
   } catch (err) {
     console.warn('Cloud sync failed, using what is saved on this phone', err)
-    set({ sync: 'offline' })
+    set({ sync: 'offline', syncError: err instanceof Error ? err.message : String((err as { message?: string })?.message ?? err) })
   }
 }
 
@@ -130,28 +204,40 @@ const schedulePull = () => {
 }
 
 /** Tell every other open phone to refresh. */
-const ping = () => {
+function ping() {
   syncChannel?.send({ type: 'broadcast', event: 'changed', payload: {} })
 }
 
-const write = async (table: string, row: Record<string, unknown>, op: 'insert' | 'update' = 'insert', id?: string) => {
+const write = (table: Table, row: Record<string, unknown>, op: 'insert' | 'update' = 'insert', id?: string) => {
   if (!remote) return
-  const q = op === 'insert' ? remote.from(table).insert(row) : remote.from(table).update(row).eq('id', id!)
-  const { error } = await q
-  if (error) {
-    console.warn(`Could not save to ${table}`, error)
-    set({ sync: 'offline' })
-    return
-  }
-  ping()
+  const key = (id ?? row.id) as string
+  recent.set(key, Date.now())
+  const same = op === 'update' ? outbox.find((o) => o.table === table && o.id === key) : undefined
+  if (same) same.row = { ...same.row, ...row }
+  else outbox.push({ table, op, id: key, row })
+  saveOutbox()
+  set({ pending: outbox.length })
+  flush()
 }
 
 export const startSync = () => {
   if (!remote || !syncChannel) return
   syncChannel.on('broadcast', { event: 'changed' }, schedulePull).subscribe()
   pull()
+  setInterval(() => outbox.length && flush().then(schedulePull), 15000)
+  window.addEventListener('online', schedulePull)
   window.addEventListener('focus', schedulePull)
   document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && schedulePull())
+}
+
+// ---- phone notifications ---------------------------------------------------
+
+type Notice = { to: Recipient; title: string; body?: string; url?: string; tag?: string }
+
+/** Ask the server to send a banner to the people concerned (never the sender). */
+const notify = (from: string, n: Notice) => {
+  if (!remote) return
+  fetch('/api/notify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ from, ...n }) }).catch(() => undefined)
 }
 
 // ---- actions ---------------------------------------------------------------
@@ -177,6 +263,7 @@ export const actions = {
     set((s) => ({ letters: [l, ...s.letters] }))
     write('letters', { id: l.id, from_id: from, to_id: to, body, howler, sent_at: iso(l.sentAt), read_by: l.readBy })
     addPoints(from, POINTS.owl, 'Sent an owl')
+    notify(from, { to, title: howler ? `📣 A Howler from ${nameOf(from)}!` : `🦉 ${nameOf(from)} sent you an owl`, body: body.length > 90 ? `${body.slice(0, 90)}…` : body, url: `/owls/${l.id}`, tag: l.id })
   },
   markRead(letterId: string, me: string) {
     const l = state.letters.find((x) => x.id === letterId)
@@ -189,6 +276,7 @@ export const actions = {
     const q: Question = { id: uid(), askedBy: by, text, at: Date.now() }
     set((s) => ({ questions: [q, ...s.questions] }))
     write('questions', { id: q.id, asked_by: by, text, created_at: iso(q.at) })
+    notify(by, { to: 'all', title: `✨ ${nameOf(by)} asked the Pensieve`, body: text, url: `/pensieve/${q.id}` })
     addPoints(by, POINTS.question, 'Asked the Pensieve a question')
   },
   answer(questionId: string, by: string, text: string) {
@@ -229,12 +317,21 @@ export const actions = {
     const it: Item<T> = { id: uid(), kind, by, data, at: now, updatedAt: now }
     set((s) => ({ items: [it as Item, ...s.items] }))
     write('items', { id: it.id, kind, by_id: by, data, created_at: iso(now), updated_at: iso(now) })
+    const d = data as Record<string, unknown>
+    if (kind === 'drawing') notify(by, { to: 'all', title: `🎨 ${nameOf(by)} drew something`, body: 'Can you guess what it is?', url: `/games/pictionary/${it.id}` })
+    if (kind === 'design') notify(by, { to: 'all', title: `👗 ${nameOf(by)} designed “${String(d.name ?? 'a new look')}”`, body: 'See it on the runway', url: `/atelier/${it.id}` })
     return it
   },
   updateItem<T extends Record<string, unknown>>(id: string, data: T) {
     const now = Date.now()
     set((s) => ({ items: s.items.map((x) => (x.id === id ? { ...x, data, updatedAt: now } : x)) }))
     write('items', { data, updated_at: iso(now) }, 'update', id)
+  },
+  savePushSub(id: string, member: string, sub: PushSubscriptionJSON) {
+    write('push_subs', { id, member, endpoint: sub.endpoint, keys: sub.keys }, 'insert', id)
+  },
+  challengeNotice(from: string, to: string) {
+    notify(from, { to, title: `⚡ ${nameOf(from)} challenges you to a duel!`, body: 'Come to the duelling hall', url: '/games/duel' })
   },
   duelResult(member: string, opponent: string, won: boolean) {
     actions.recordScore('duel', member, won ? 1 : 0)

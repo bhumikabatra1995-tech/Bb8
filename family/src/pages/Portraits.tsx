@@ -4,6 +4,7 @@ import { Crest } from '../components/Art'
 import { Portrait } from '../components/Avatar'
 import { Page, TopBar } from '../components/UI'
 import { membersOf, type HouseId } from '../data/family'
+import { addPushMember } from '../state/push'
 import { actions } from '../state/store'
 
 export default function Portraits() {
@@ -37,6 +38,7 @@ export default function Portraits() {
             whileTap={{ scale: 0.95 }}
             onClick={() => {
               actions.choose(m.id)
+              addPushMember(m.id)
               nav('/home')
             }}
             aria-label={`I'm ${m.name}`}

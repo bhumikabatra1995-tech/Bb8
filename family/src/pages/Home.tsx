@@ -7,6 +7,7 @@ import { Glyph, type GlyphName } from '../components/Glyphs'
 import { FlyingOwl } from '../components/Atmosphere'
 import { DEFAULT_LOOK, Figure } from '../components/Figure'
 import { SceneArt } from '../components/SceneArt'
+import { NotifyCard } from '../components/NotifyCard'
 import { Page } from '../components/UI'
 import { memberById } from '../data/family'
 import { housePoints, itemsOf, nameOf, personalPoints, unreadFor, useStore } from '../state/store'
@@ -82,7 +83,7 @@ export default function Home() {
         <div className="row between" style={{ position: 'absolute', left: 18, right: 18, top: 'calc(var(--safe-top) + 14px)' }}>
           <span className={`sync-pill ${s.sync}`}>
             <i />
-            {s.sync === 'cloud' ? 'Connected' : s.sync === 'connecting' ? 'Connecting…' : s.sync === 'offline' ? 'Offline' : 'On this phone'}
+            {s.pending ? `Saving ${s.pending}…` : s.sync === 'cloud' ? 'Connected' : s.sync === 'connecting' ? 'Connecting…' : s.sync === 'offline' ? 'Offline' : 'On this phone'}
           </span>
           <Link to="/" className="icon-btn" aria-label="Switch person">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -108,6 +109,14 @@ export default function Home() {
           </Link>
         </motion.div>
       </section>
+
+      {s.syncError && (
+        <p className="faint" style={{ fontSize: 13, marginTop: 10, textAlign: 'center' }}>
+          Not saved yet, will keep trying · {s.syncError}
+        </p>
+      )}
+
+      <NotifyCard member={me.id} />
 
       {/* points strip */}
       <Link to="/me" className="panel" style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 18, textDecoration: 'none', color: 'var(--text)', padding: '12px 16px' }}>

@@ -34,9 +34,8 @@ phones, connect the database (below).
 
 ### 1. Database: Supabase
 1. Create a project at [supabase.com](https://supabase.com).
-2. **SQL Editor** → paste `supabase/schema.sql`. First replace
-   `CHANGE-ME-FAMILY-KEY` with a long random phrase (this is the family key),
-   then **Run**.
+2. **SQL Editor** → paste `supabase/schema.sql` → **Run**. Nothing to edit.
+   (To lock the database to a secret join link, see the comment at the top of that file.)
 3. **Project Settings → API**: copy the **Project URL** and the **anon public key**.
 
 ### 2. Hosting: Vercel
@@ -56,13 +55,7 @@ and redeploy. The address stays on the server, so the calendar stays
 private.
 
 ### 4. Invite the family
-Send everyone the join link once:
-
-```
-https://<your-app>.vercel.app/?key=<the family key>
-```
-
-The phone remembers the key. Then use **Share → Add to Home Screen**
+Send everyone the app's address, only inside the family. Then use **Share → Add to Home Screen**
 (iPhone, in Safari) or **⋮ → Add to Home screen** (Android) so it opens
 like a real app.
 

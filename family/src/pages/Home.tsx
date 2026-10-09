@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion'
 import type { ReactNode } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import { Hourglass, MapArt, OwlTileArt, PensieveArt, SnitchArt, TimeTurnerArt } from '../components/Art'
-import { FlyingOwl, Moon, Stars } from '../components/Atmosphere'
+import { Hourglass, OwlTileArt, SnitchArt } from '../components/Art'
+import { CastleScene } from '../components/Castle'
+import { Glyph, type GlyphName } from '../components/Glyphs'
+import { FlyingOwl } from '../components/Atmosphere'
 import { DEFAULT_LOOK, Figure } from '../components/Figure'
 import { SceneArt } from '../components/SceneArt'
 import { Page } from '../components/UI'
@@ -15,29 +17,12 @@ const greeting = () => {
   return h < 5 ? 'Still up' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
 }
 
-function IconTile({ to, label, children, delay }: { to: string; label: string; children: ReactNode; delay: number }) {
+function IconTile({ to, label, glyph, delay }: { to: string; label: string; glyph: GlyphName; delay: number }) {
   return (
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, duration: 0.5 }}>
-      <Link
-        to={to}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 6,
-          height: 112,
-          padding: '10px 4px 12px',
-          borderRadius: 18,
-          textDecoration: 'none',
-          color: 'var(--text)',
-          background: 'var(--card)',
-          border: '1px solid var(--card-border)',
-          boxShadow: '0 14px 30px -18px rgba(0,0,10,.9)',
-        }}
-      >
-        <div style={{ flex: 1, display: 'grid', placeItems: 'center' }}>{children}</div>
-        <span style={{ fontSize: 14 }}>{label}</span>
+      <Link to={to} className="glyph-tile">
+        <Glyph name={glyph} size={42} />
+        <span>{label}</span>
       </Link>
     </motion.div>
   )
@@ -82,16 +67,17 @@ export default function Home() {
         style={{
           position: 'relative',
           margin: 'calc(-14px - var(--safe-top)) -18px 0',
-          height: 'calc(330px + var(--safe-top))',
+          height: 'calc(380px + var(--safe-top))',
           overflow: 'hidden',
           borderRadius: '0 0 28px 28px',
-          background: 'linear-gradient(180deg, #050820 0%, #101845 55%, #1a1640 100%)',
+          background: '#0b0f26',
         }}
       >
-        <Stars count={40} height={330} />
-        <Moon style={{ right: 90, top: 'calc(var(--safe-top) + 64px)' }} />
-        <SceneArt name="castle" />
-        <FlyingOwl top={110} duration={19} />
+        <div style={{ position: 'absolute', inset: 0 }}>
+          <CastleScene height="100%" />
+        </div>
+        <SceneArt name="castle" fade={false} />
+        <FlyingOwl top={130} duration={19} />
         <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 140, background: 'linear-gradient(180deg, transparent, #0b0f26)' }} />
         <div className="row between" style={{ position: 'absolute', left: 18, right: 18, top: 'calc(var(--safe-top) + 14px)' }}>
           <span className={`sync-pill ${s.sync}`}>
@@ -105,7 +91,10 @@ export default function Home() {
           </Link>
         </div>
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }} style={{ position: 'absolute', left: 22, right: 22, bottom: 26 }}>
-          <div className="eyebrow">{me.house} · The Great Hall</div>
+          <div className="row" style={{ gap: 8 }}>
+            <Glyph name="star" size={14} />
+            <span className="wordmark" style={{ fontSize: 15 }}>33C · 34C</span>
+          </div>
           <h1 style={{ fontFamily: 'var(--serif)', fontWeight: 600, fontSize: 36, lineHeight: 1.08, marginTop: 6 }}>
             {greeting()},
             <br />
@@ -179,21 +168,10 @@ export default function Home() {
         <h2>Explore</h2>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
-        <IconTile to="/pensieve" label="Pensieve" delay={0.2}>
-          <PensieveArt size={58} />
-        </IconTile>
-        <IconTile to="/cup" label="House Cup" delay={0.26}>
-          <div className="row" style={{ gap: 0 }}>
-            <Hourglass house="33C" fill={p33 / lead} size={26} />
-            <Hourglass house="34C" fill={p34 / lead} size={26} />
-          </div>
-        </IconTile>
-        <IconTile to="/calendar" label="Calendar" delay={0.32}>
-          <TimeTurnerArt size={56} />
-        </IconTile>
-        <IconTile to="/map" label="Map" delay={0.38}>
-          <MapArt size={60} />
-        </IconTile>
+        <IconTile to="/pensieve" label="Pensieve" glyph="pensieve" delay={0.2} />
+        <IconTile to="/cup" label="House Cup" glyph="hourglass" delay={0.26} />
+        <IconTile to="/calendar" label="Calendar" glyph="timeturner" delay={0.32} />
+        <IconTile to="/map" label="Map" glyph="map" delay={0.38} />
       </div>
     </Page>
   )

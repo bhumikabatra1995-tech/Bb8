@@ -1,57 +1,9 @@
-import type { HouseId, Member } from '../data/family'
+import type { HouseId } from '../data/family'
 import { OwlFigure } from './Atmosphere'
 
 const HOUSE_FILL: Record<HouseId, [string, string]> = {
   '33C': ['#2C4A9E', '#0E1640'],
   '34C': ['#9A2640', '#3A0A16'],
-}
-
-/** A gilded oval portrait with a candle-lit silhouette, like the paintings on the stairs. */
-export function Portrait({ member, size = 132, glow = false }: { member: Member; size?: number; glow?: boolean }) {
-  const [c1, c2] = HOUSE_FILL[member.house]
-  const id = `p-${member.id}`
-  const kid = member.kid
-  return (
-    <svg width={size} height={size * 1.3} viewBox="0 0 100 130" aria-hidden="true" style={{ overflow: 'visible', filter: glow ? 'drop-shadow(0 0 18px rgba(233,194,122,.55))' : 'drop-shadow(0 14px 18px rgba(0,0,0,.7))' }}>
-      <defs>
-        <linearGradient id={`${id}-gold`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#FFF0C2" />
-          <stop offset=".3" stopColor="#D9AE5C" />
-          <stop offset=".6" stopColor="#8E6F38" />
-          <stop offset="1" stopColor="#E9C27A" />
-        </linearGradient>
-        <radialGradient id={`${id}-bg`} cx="45%" cy="35%" r="75%">
-          <stop offset="0" stopColor={c1} />
-          <stop offset="1" stopColor={c2} />
-        </radialGradient>
-        <radialGradient id={`${id}-rim`} cx="30%" cy="30%" r="80%">
-          <stop offset="0" stopColor="#FFD58A" stopOpacity=".55" />
-          <stop offset="1" stopColor="#FFD58A" stopOpacity="0" />
-        </radialGradient>
-        <clipPath id={`${id}-clip`}>
-          <ellipse cx="50" cy="60" rx="38" ry="50" />
-        </clipPath>
-      </defs>
-      <ellipse cx="50" cy="60" rx="38" ry="50" fill={`url(#${id}-bg)`} />
-      <g clipPath={`url(#${id}-clip)`} style={{ transformOrigin: '50px 110px', animation: 'breathe 5s ease-in-out infinite' }}>
-        <ellipse cx="34" cy="38" rx="30" ry="34" fill={`url(#${id}-rim)`} />
-        <path d={kid ? 'M14 120 Q18 92 50 86 Q82 92 86 120 Z' : 'M8 120 Q12 86 50 80 Q88 86 92 120 Z'} fill="#120C0A" />
-        <path d={kid ? 'M40 88 L50 104 L60 88' : 'M38 82 L50 102 L62 82'} stroke={c1} strokeWidth="5" fill="none" />
-        <path d={kid ? 'M40 88 L50 104 L60 88' : 'M38 82 L50 102 L62 82'} stroke="#E9C27A" strokeWidth="1.2" fill="none" strokeDasharray="3 3" />
-        <rect x={kid ? 45 : 44} y={kid ? 72 : 66} width={kid ? 10 : 12} height="14" fill="#120C0A" />
-        <ellipse cx="50" cy={kid ? 60 : 54} rx={kid ? 15 : 16} ry={kid ? 17 : 19} fill="#120C0A" />
-        <path d={kid ? 'M36 58 Q36 40 50 40 Q64 40 64 58' : 'M35 52 Q35 33 50 33 Q65 33 65 52'} stroke="#FFD58A" strokeOpacity=".35" strokeWidth="1.2" fill="none" />
-        <ellipse cx="50" cy="60" rx="38" ry="50" fill="none" stroke="#000" strokeOpacity=".35" strokeWidth="10" />
-      </g>
-      <ellipse cx="50" cy="60" rx="41" ry="53" fill="none" stroke={`url(#${id}-gold)`} strokeWidth="6" />
-      <ellipse cx="50" cy="60" rx="45" ry="57" fill="none" stroke={`url(#${id}-gold)`} strokeWidth="1.2" />
-      <path d="M50 1 Q46 6 50 10 Q54 6 50 1 Z M8 60 Q2 56 4 50 M92 60 Q98 56 96 50" stroke="#D9AE5C" strokeWidth="1.5" fill="#D9AE5C" />
-      <rect x="22" y="112" width="56" height="16" rx="3" fill={`url(#${id}-gold)`} />
-      <text x="50" y="123.5" textAnchor="middle" fontFamily="Cinzel, serif" fontWeight="700" fontSize="9.5" fill="#2A1C0C">
-        {member.name.toUpperCase()}
-      </text>
-    </svg>
-  )
 }
 
 export function Crest({ house, size = 64 }: { house: HouseId; size?: number }) {

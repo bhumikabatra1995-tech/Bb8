@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Crest, Portrait } from '../components/Art'
+import { Crest } from '../components/Art'
+import { Portrait } from '../components/Avatar'
 import { Page, TopBar } from '../components/UI'
 import { membersOf, type HouseId } from '../data/family'
 import { actions } from '../state/store'
@@ -41,7 +42,7 @@ export default function Portraits() {
             aria-label={`I'm ${m.name}`}
             style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer' }}
           >
-            <Portrait member={m} size={124} />
+            <Portrait member={m} size={128} named />
           </motion.button>
         ))}
       </div>

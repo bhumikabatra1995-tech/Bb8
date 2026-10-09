@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { Crest, Hourglass, Portrait } from '../components/Art'
+import { Crest, Hourglass } from '../components/Art'
+import { Portrait } from '../components/Avatar'
 import { Empty, Page, TopBar, timeAgo } from '../components/UI'
 import { memberById } from '../data/family'
 import { actions, bestScores, duelRecord, housePoints, personalPoints, rankInHouse, useStore } from '../state/store'

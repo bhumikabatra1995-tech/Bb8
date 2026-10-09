@@ -1,4 +1,5 @@
 import { useId } from 'react'
+import { Face, HairBack, HairFront, HeadDefs, shade } from './Avatar'
 
 /** Everything about a look. Saved as-is in the Lookbook. */
 export type Look = {
@@ -17,29 +18,32 @@ export type Look = {
 
 export type GarmentId = 'aline' | 'ballgown' | 'mermaid' | 'party' | 'lehenga' | 'robe'
 export type PatternId = 'solid' | 'stars' | 'florals' | 'paisley' | 'polka' | 'stripes' | 'sparkle' | 'ombre'
-export type HairId = 'long' | 'bun' | 'bob' | 'braid'
+export type HairId = 'long' | 'bun' | 'bob' | 'braid' | 'short'
 export type AccessoryId = 'tiara' | 'jhumkas' | 'necklace' | 'wand' | 'clutch' | 'hat' | 'wings' | 'dupatta'
 
 export const W = 300
 export const H = 520
 
+// A storybook doll: big round head (centre 150,150), soft little body below.
+const HEAD = { x: 150, y: 150, k: 2.7 }
+
 export const GARMENTS: Record<GarmentId, { name: string; d: string }> = {
-  aline: { name: 'A-line', d: 'M112 122 Q150 112 188 122 L178 214 Q181 220 182 226 L224 404 Q150 422 76 404 L118 226 Q119 220 122 214 Z' },
-  ballgown: { name: 'Ball gown', d: 'M113 122 Q150 112 187 122 L176 212 Q178 220 180 224 Q262 330 272 474 Q150 506 28 474 Q38 330 120 224 Q122 220 124 212 Z' },
-  mermaid: { name: 'Mermaid', d: 'M113 122 Q150 112 187 122 L176 214 Q190 280 172 384 Q206 452 234 498 Q150 514 66 498 Q94 452 128 384 Q110 280 124 214 Z' },
-  party: { name: 'Party', d: 'M113 122 Q150 112 187 122 L176 214 Q180 222 182 228 L206 306 Q150 320 94 306 L118 228 Q120 222 124 214 Z' },
-  lehenga: { name: 'Lehenga', d: 'M114 124 Q150 114 186 124 L179 188 Q150 196 121 188 Z M124 214 Q150 206 176 214 L248 482 Q150 508 52 482 Z' },
-  robe: { name: 'Wizard robe', d: 'M104 120 Q150 106 196 120 L212 200 L242 492 Q150 508 58 492 L88 200 Z' },
+  aline: { name: 'A-line', d: 'M108 228 Q150 214 192 228 L182 300 Q184 306 186 312 L232 444 Q150 468 68 444 L114 312 Q116 306 118 300 Z' },
+  ballgown: { name: 'Ball gown', d: 'M110 228 Q150 214 190 228 L180 298 Q262 356 270 470 Q150 502 30 470 Q38 356 120 298 Z' },
+  mermaid: { name: 'Mermaid', d: 'M110 228 Q150 214 190 228 L180 300 Q192 360 172 408 Q206 452 226 490 Q150 506 74 490 Q94 452 128 408 Q108 360 120 300 Z' },
+  party: { name: 'Party', d: 'M110 228 Q150 214 190 228 L180 300 Q182 306 184 310 L214 384 Q150 400 86 384 L116 310 Q118 306 120 300 Z' },
+  lehenga: { name: 'Lehenga', d: 'M112 228 Q150 216 188 228 L182 272 Q150 280 118 272 Z M122 298 Q150 290 178 298 L250 476 Q150 504 50 476 Z' },
+  robe: { name: 'Wizard robe', d: 'M100 226 Q150 208 200 226 L214 300 L242 482 Q150 500 58 482 L86 300 Z' },
 }
 
-export const SKINS = ['#F6D7C3', '#E8B898', '#D19A73', '#B47A52', '#8C5A3A', '#5E3A24']
+export const SKINS = ['#FAD9C6', '#F4C1A4', '#E8A888', '#CF8C66', '#AE6E4A', '#7E4C32']
 export const HAIR_COLORS = ['#1B1210', '#3B2416', '#6B3E22', '#A8662E', '#D9B25E', '#8E3B5E', '#E9E2F2']
-export const FABRICS = ['#F4ECDB', '#F0C77E', '#E8A0B4', '#D2486A', '#9A2640', '#F08A5D', '#F2D35E', '#7FD6A0', '#2F7A5C', '#7FC4E8', '#3B5BDB', '#1F2A6B', '#8E6FD8', '#4B2A6E', '#1B1530', '#C0C0C8']
+export const FABRICS = ['#F4ECDB', '#F0C77E', '#F2A8BE', '#D2486A', '#9A2640', '#F08A5D', '#F2D35E', '#7FD6A0', '#2F7A5C', '#8CCBEB', '#4A6BE0', '#22307A', '#9A7BE0', '#4B2A6E', '#1B1530', '#C8CBD6']
 
-const ARM_L = 'M113 124 Q100 128 98 150 L88 290 Q90 300 97 298 L112 162 Z'
-const ARM_R = 'M187 124 Q200 128 202 150 L212 290 Q210 300 203 298 L188 162 Z'
-const SLEEVE_LONG_L = 'M113 122 Q99 126 96 152 L84 292 Q92 302 100 296 L114 164 Z'
-const SLEEVE_LONG_R = 'M187 122 Q201 126 204 152 L216 292 Q208 302 200 296 L186 164 Z'
+const ARM_L = 'M112 230 Q97 234 95 254 L90 322 Q96 334 106 328 L115 262 Z'
+const ARM_R = 'M188 230 Q203 234 205 254 L210 322 Q204 334 194 328 L185 262 Z'
+const SLEEVE_LONG_L = 'M112 228 Q95 230 92 252 L86 324 Q97 338 110 330 L117 262 Z'
+const SLEEVE_LONG_R = 'M188 228 Q205 230 208 252 L214 324 Q203 338 190 330 L183 262 Z'
 
 function PatternDef({ id, look }: { id: string; look: Look }) {
   const { color: a, color2: b, pattern } = look
@@ -65,7 +69,6 @@ function PatternDef({ id, look }: { id: string; look: Look }) {
               <circle cx={x} cy={y} r="2.2" fill={a} />
             </g>
           ))}
-          <path d="M22 18 q4 -4 8 0" stroke={b} strokeWidth="1" fill="none" opacity=".6" />
         </pattern>
       )
     case 'paisley':
@@ -118,58 +121,35 @@ function PatternDef({ id, look }: { id: string; look: Look }) {
   }
 }
 
-function Hair({ look, part }: { look: Look; part: 'back' | 'front' }) {
-  const c = look.hairColor
-  if (part === 'back') {
-    if (look.hair === 'long') return <path d="M124 58 Q124 26 150 26 Q177 26 177 58 L186 168 Q168 178 150 172 Q132 178 114 168 Z" fill={c} />
-    if (look.hair === 'bob') return <path d="M122 62 Q122 26 150 26 Q178 26 178 62 L181 96 Q150 104 119 96 Z" fill={c} />
-    if (look.hair === 'braid')
-      return (
-        <g fill={c}>
-          <path d="M124 60 Q124 26 150 26 Q177 26 177 60 L174 92 Q150 98 126 92 Z" />
-          {[100, 118, 136, 154, 172, 190].map((y, i) => (
-            <ellipse key={y} cx={176 + (i % 2 ? 2 : -2)} cy={y} rx="8" ry="10" />
-          ))}
-        </g>
-      )
-    return (
-      <g fill={c}>
-        <circle cx="150" cy="30" r="16" />
-        <path d="M126 62 Q126 32 150 32 Q174 32 174 62 L172 78 Q150 70 128 78 Z" />
-      </g>
-    )
-  }
-  return <path d="M127 62 Q130 36 150 36 Q171 36 173 62 Q163 48 150 50 Q136 47 127 62 Z" fill={c} />
-}
-
 function Accessory({ a, look }: { a: AccessoryId; look: Look }) {
   switch (a) {
     case 'tiara':
       return (
-        <g>
-          <path d="M131 44 L136 32 L142 41 L150 26 L158 41 L164 32 L169 44 Q150 38 131 44 Z" fill="#F0C77E" stroke="#B8862F" strokeWidth=".8" />
-          <circle cx="150" cy="31" r="2.6" fill="#7FC4E8" />
-          <circle cx="136" cy="35" r="1.6" fill="#E8A0B4" />
-          <circle cx="164" cy="35" r="1.6" fill="#E8A0B4" />
+        <g style={{ filter: 'drop-shadow(0 0 6px rgba(255,220,150,.7))' }}>
+          <path d="M112 70 L122 46 L134 62 L150 32 L166 62 L178 46 L188 70 Q150 58 112 70 Z" fill="#F4CF86" stroke="#B8862F" strokeWidth="1.4" />
+          <circle cx="150" cy="42" r="5" fill="#8CCBEB" stroke="#fff" strokeWidth="1" />
+          <circle cx="124" cy="54" r="3" fill="#F2A8BE" />
+          <circle cx="176" cy="54" r="3" fill="#F2A8BE" />
         </g>
       )
     case 'hat':
       return (
         <g>
-          <path d="M104 46 Q150 60 196 46 Q178 40 166 40 L158 8 Q150 -12 128 -4 Q146 0 142 14 L134 40 Q122 40 104 46 Z" fill={look.color2 === look.color ? '#1B1530' : look.color2} stroke="#F0C77E" strokeWidth="1" />
-          <path d="M136 36 Q150 40 164 36" stroke="#F0C77E" strokeWidth="3" fill="none" />
+          <path d="M60 92 Q150 122 240 92 Q214 78 192 76 L176 18 Q164 -16 122 -2 Q154 6 146 30 L110 76 Q86 78 60 92 Z" fill={look.color2 === look.color ? '#2A2340' : look.color2} stroke="#F0C77E" strokeWidth="1.6" />
+          <path d="M112 72 Q150 82 190 72" stroke="#E2A04A" strokeWidth="9" fill="none" />
+          <rect x="140" y="66" width="20" height="16" rx="3" fill="none" stroke="#F4CF86" strokeWidth="3" />
         </g>
       )
     case 'jhumkas':
       return (
         <g fill="#F0C77E">
-          {[127, 173].map((x) => (
+          {[88, 212].map((x) => (
             <g key={x}>
-              <circle cx={x} cy="74" r="1.6" />
-              <path d={`M${x - 4} 82 Q${x} 74 ${x + 4} 82 Z`} />
-              <circle cx={x - 3} cy="84" r=".9" />
-              <circle cx={x} cy="85" r=".9" />
-              <circle cx={x + 3} cy="84" r=".9" />
+              <circle cx={x} cy="170" r="3" />
+              <path d={`M${x - 8} 190 Q${x} 174 ${x + 8} 190 Z`} />
+              <circle cx={x - 6} cy="193" r="1.8" />
+              <circle cx={x} cy="195" r="1.8" />
+              <circle cx={x + 6} cy="193" r="1.8" />
             </g>
           ))}
         </g>
@@ -177,46 +157,51 @@ function Accessory({ a, look }: { a: AccessoryId; look: Look }) {
     case 'necklace':
       return (
         <g>
-          <path d="M136 112 Q150 132 164 112" stroke="#F0C77E" strokeWidth="1.6" fill="none" />
-          <path d="M146 124 L150 132 L154 124 Z" fill="#D2486A" stroke="#F0C77E" strokeWidth=".8" />
+          <path d="M128 226 Q150 250 172 226" stroke="#F0C77E" strokeWidth="2.4" fill="none" />
+          <path d="M144 242 L150 254 L156 242 Z" fill="#D2486A" stroke="#F0C77E" strokeWidth="1" />
         </g>
       )
     case 'wand':
       return (
         <g>
-          <path d="M206 300 L236 246" stroke="#5A3A22" strokeWidth="3.5" strokeLinecap="round" />
-          <circle cx="237" cy="244" r="4" fill="#FFF4CC" style={{ filter: 'drop-shadow(0 0 6px #FFD27A)', animation: 'glowp 1.4s ease-in-out infinite' }} />
+          <path d="M200 330 L240 268" stroke="#6A4428" strokeWidth="5" strokeLinecap="round" />
+          <circle cx="242" cy="264" r="6" fill="#FFF4CC" style={{ filter: 'drop-shadow(0 0 10px #FFD27A)', animation: 'glowp 1.4s ease-in-out infinite' }} />
+          <path d="M256 250 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2 Z" fill="#FFF4CC" style={{ animation: 'twinkle 1.8s ease-in-out infinite' }} />
         </g>
       )
     case 'clutch':
       return (
         <g>
-          <rect x="74" y="296" width="30" height="18" rx="4" fill={look.color2} stroke="#F0C77E" strokeWidth="1.2" />
-          <path d="M74 302 H104" stroke="#F0C77E" strokeWidth=".8" />
-          <circle cx="89" cy="302" r="2" fill="#F0C77E" />
+          <rect x="70" y="326" width="40" height="26" rx="8" fill={look.color2} stroke="#F0C77E" strokeWidth="1.6" />
+          <path d="M70 336 H110" stroke="#F0C77E" strokeWidth="1" />
+          <circle cx="90" cy="336" r="3" fill="#F0C77E" />
         </g>
       )
     case 'dupatta':
-      return <path d="M186 124 Q230 200 214 320 Q200 420 236 470 Q206 470 196 430 Q176 330 190 230 Q194 170 176 130 Z" fill={look.color2} opacity=".55" stroke="#F0C77E" strokeWidth="1" strokeDasharray="2 2" />
+      return <path d="M186 226 Q238 300 220 380 Q206 450 244 480 Q210 482 198 446 Q178 360 192 290 Q196 252 176 232 Z" fill={look.color2} opacity=".55" stroke="#F0C77E" strokeWidth="1.2" strokeDasharray="3 3" />
     default:
       return null
   }
 }
 
-/** A fashion-illustration model wearing a Look. Renders at any size. */
+/** A storybook doll wearing a Look. Renders at any size. */
 export function Figure({ look, width = 300, runway = false }: { look: Look; width?: number; runway?: boolean }) {
   const uid = useId().replace(/:/g, '')
+  const hid = `h-${uid}`
   const pat = `pat-${uid}`
   const clip = `clip-${uid}`
-  const shade = `shade-${uid}`
+  const sheen = `sheen-${uid}`
   const paint = `paint-${uid}`
+  const brush = `brush-${uid}`
+  const skinG = `skin-${uid}`
   const g = GARMENTS[look.garment]
-  const showMidriff = look.garment === 'lehenga'
   const longSleeves = look.sleeves === 'long'
+  const wide = look.garment === 'ballgown' || look.garment === 'lehenga' || look.garment === 'aline'
 
   return (
     <svg width={width} height={(width * H) / W} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`A ${g.name.toLowerCase()} design`} style={{ overflow: 'visible' }}>
       <defs>
+        <HeadDefs id={hid} skin={look.skin} hairColor={look.hairColor} />
         <PatternDef id={pat} look={look} />
         <clipPath id={clip}>
           <path d={g.d} />
@@ -227,13 +212,22 @@ export function Figure({ look, width = 300, runway = false }: { look: Look; widt
             </>
           )}
         </clipPath>
-        <linearGradient id={shade} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#000" stopOpacity=".35" />
-          <stop offset=".3" stopColor="#000" stopOpacity="0" />
-          <stop offset=".45" stopColor="#fff" stopOpacity=".16" />
-          <stop offset=".6" stopColor="#000" stopOpacity="0" />
-          <stop offset="1" stopColor="#000" stopOpacity=".38" />
+        <linearGradient id={sheen} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#1a1030" stopOpacity=".45" />
+          <stop offset=".28" stopColor="#1a1030" stopOpacity="0" />
+          <stop offset=".42" stopColor="#fff" stopOpacity=".2" />
+          <stop offset=".55" stopColor="#fff" stopOpacity="0" />
+          <stop offset="1" stopColor="#1a1030" stopOpacity=".5" />
         </linearGradient>
+        <linearGradient id={skinG} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor={shade(look.skin, -0.14)} />
+          <stop offset=".5" stopColor={look.skin} />
+          <stop offset="1" stopColor={shade(look.skin, -0.18)} />
+        </linearGradient>
+        <filter id={brush} x="-5%" y="-5%" width="110%" height="110%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.35" numOctaves="2" seed="6" result="n" />
+          <feDisplacementMap in="SourceGraphic" in2="n" scale="3" />
+        </filter>
         {look.painting && (
           <pattern id={paint} patternUnits="userSpaceOnUse" width={W} height={H}>
             <image href={look.painting} width={W} height={H} />
@@ -241,79 +235,71 @@ export function Figure({ look, width = 300, runway = false }: { look: Look; widt
         )}
       </defs>
 
-      {/* shadow on the runway */}
-      <ellipse cx="150" cy="500" rx="80" ry="10" fill="#000" opacity=".35" />
-
       {look.accessories.includes('wings') && (
-        <g opacity=".7" style={{ transformOrigin: '150px 170px', animation: runway ? 'breathe 2s ease-in-out infinite' : undefined }}>
-          <path d="M150 160 Q60 60 40 150 Q60 200 150 190 Z" fill="#DCE6FF" stroke="#fff" strokeWidth="1" />
-          <path d="M150 160 Q240 60 260 150 Q240 200 150 190 Z" fill="#DCE6FF" stroke="#fff" strokeWidth="1" />
-          <path d="M150 190 Q80 220 70 270 Q110 260 150 200 Z M150 190 Q220 220 230 270 Q190 260 150 200 Z" fill="#E8D8FF" />
+        <g opacity=".75" style={{ transformOrigin: '150px 260px', animation: runway ? 'breathe 2s ease-in-out infinite' : undefined, filter: 'drop-shadow(0 0 10px rgba(220,230,255,.6))' }}>
+          <path d="M150 250 Q60 150 36 240 Q56 296 150 284 Z" fill="#E6ECFF" />
+          <path d="M150 250 Q240 150 264 240 Q244 296 150 284 Z" fill="#E6ECFF" />
+          <path d="M150 284 Q86 306 76 352 Q114 346 150 294 Z M150 284 Q214 306 224 352 Q186 346 150 294 Z" fill="#EADCFF" />
         </g>
       )}
 
-      <Hair look={look} part="back" />
+      <g transform={`translate(${HEAD.x} ${HEAD.y}) scale(${HEAD.k})`}>
+        <HairBack style={look.hair} color={look.hairColor} id={hid} />
+      </g>
 
       {/* body */}
-      <g fill={look.skin}>
-        <path d="M141 86 L159 86 L161 114 L139 114 Z" />
+      <g fill={`url(#${skinG})`}>
+        <path d="M140 200 L160 200 L162 230 L138 230 Z" />
         <path d={ARM_L} />
         <path d={ARM_R} />
-        <circle cx="93" cy="300" r="7" />
-        <circle cx="207" cy="300" r="7" />
-        <path d="M112 122 Q150 108 188 122 L178 218 Q182 250 186 272 L114 272 Q118 250 122 218 Z" />
-        <path d="M121 266 L147 266 L143 488 L133 488 Z" />
-        <path d="M153 266 L179 266 L167 488 L157 488 Z" />
-        <ellipse cx="150" cy="64" rx="22" ry="27" />
+        <path d="M110 228 Q150 214 190 228 L180 300 Q184 330 186 360 L114 360 Q116 330 120 300 Z" />
+        <path d="M127 356 L147 356 L146 468 L131 468 Z" />
+        <path d="M153 356 L173 356 L169 468 L154 468 Z" />
       </g>
-      <g fill="#000" opacity=".12">
-        <path d="M141 92 L159 92 L159 100 Q150 104 141 100 Z" />
-      </g>
-      {showMidriff && <path d="M122 190 Q150 198 178 190 L176 214 Q150 208 124 214 Z" fill="#000" opacity=".06" />}
+      <circle cx="98" cy="332" r="11" fill={look.skin} />
+      <circle cx="202" cy="332" r="11" fill={look.skin} />
+      <path d="M140 214 Q150 222 160 214 L160 222 Q150 228 140 222 Z" fill="#7a2a2a" opacity=".1" />
 
       {/* shoes */}
       <g fill={look.color2}>
-        <path d="M128 486 L146 486 L148 496 Q138 500 126 496 Z" />
-        <path d="M156 486 L172 486 L174 496 Q164 500 152 496 Z" />
+        <path d="M124 464 Q138 456 150 464 L150 476 Q137 486 122 478 Z" />
+        <path d="M150 464 Q162 456 176 464 L178 478 Q163 486 150 476 Z" />
       </g>
 
       {/* the garment */}
-      <g clipPath={`url(#${clip})`}>
-        <rect width={W} height={H} fill={`url(#${pat})`} />
-        {look.painting && <rect width={W} height={H} fill={`url(#${paint})`} />}
-        <rect width={W} height={H} fill={`url(#${shade})`} />
-        {(look.garment === 'ballgown' || look.garment === 'lehenga' || look.garment === 'aline') && (
-          <g stroke="#000" strokeOpacity=".12" strokeWidth="2" fill="none">
-            <path d="M150 230 Q140 360 110 490 M150 230 Q160 360 190 490 M150 230 Q120 340 70 480 M150 230 Q180 340 230 480" />
-          </g>
-        )}
+      <g filter={`url(#${brush})`}>
+        <g clipPath={`url(#${clip})`}>
+          <rect width={W} height={H} fill={`url(#${pat})`} />
+          {look.painting && <rect width={W} height={H} fill={`url(#${paint})`} />}
+          <rect width={W} height={H} fill={`url(#${sheen})`} />
+          {wide && (
+            <g stroke="#1a1030" strokeOpacity=".16" strokeWidth="3" fill="none">
+              <path d="M150 300 Q138 400 112 490 M150 300 Q162 400 188 490 M150 300 Q118 390 66 476 M150 300 Q182 390 234 476" />
+            </g>
+          )}
+          <path d="M100 300 Q150 316 200 300 L200 320 Q150 334 100 320 Z" fill="#1a1030" opacity=".14" />
+        </g>
       </g>
       {look.trim && (
-        <g stroke="#F0C77E" strokeWidth="2.4" fill="none" strokeLinecap="round">
-          <path d="M113 122 Q150 134 187 122" />
-          {look.garment !== 'lehenga' && look.garment !== 'robe' && <path d="M123 214 Q150 222 177 214" strokeWidth="4" />}
-          {look.garment === 'lehenga' && <path d="M56 480 Q150 506 244 480" strokeWidth="5" strokeDasharray="1 6" />}
-          {look.garment === 'robe' && <path d="M150 118 L150 500" strokeWidth="1.6" />}
+        <g stroke="#F4CF86" strokeWidth="3" fill="none" strokeLinecap="round" style={{ filter: 'drop-shadow(0 0 3px rgba(255,210,130,.6))' }}>
+          <path d="M110 229 Q150 242 190 229" />
+          {look.garment !== 'lehenga' && look.garment !== 'robe' && <path d="M120 300 Q150 310 180 300" strokeWidth="5" />}
+          {look.garment === 'lehenga' && <path d="M54 474 Q150 504 246 474" strokeWidth="6" strokeDasharray="1 8" />}
+          {look.garment === 'robe' && <path d="M150 220 L150 496" strokeWidth="2" />}
         </g>
       )}
-      <path d={g.d} fill="none" stroke="#000" strokeOpacity=".25" strokeWidth="1" />
 
       {look.sleeves === 'puff' && (
-        <g fill={`url(#${pat})`} stroke="#000" strokeOpacity=".2">
-          <ellipse cx="108" cy="134" rx="15" ry="13" />
-          <ellipse cx="192" cy="134" rx="15" ry="13" />
+        <g fill={`url(#${pat})`} filter={`url(#${brush})`}>
+          <ellipse cx="108" cy="240" rx="20" ry="16" />
+          <ellipse cx="192" cy="240" rx="20" ry="16" />
         </g>
       )}
 
-      {/* face */}
-      <g stroke="#3B2416" strokeWidth="1.3" fill="none" strokeLinecap="round">
-        <path d="M137 66 Q142 70 147 66" />
-        <path d="M153 66 Q158 70 163 66" />
+      <g transform={`translate(${HEAD.x} ${HEAD.y}) scale(${HEAD.k})`}>
+        <Face id={hid} skin={look.skin} />
+        <HairFront style={look.hair} color={look.hairColor} id={hid} />
       </g>
-      <circle cx="138" cy="76" r="4" fill="#E8789A" opacity=".25" />
-      <circle cx="162" cy="76" r="4" fill="#E8789A" opacity=".25" />
-      <path d="M145 81 Q150 85 155 81 Q150 83 145 81 Z" fill="#B8475E" />
-      <Hair look={look} part="front" />
 
       {look.accessories
         .filter((a) => a !== 'wings')
@@ -326,14 +312,14 @@ export function Figure({ look, width = 300, runway = false }: { look: Look; widt
 
 export const DEFAULT_LOOK: Look = {
   garment: 'ballgown',
-  sleeves: 'none',
-  color: '#1F2A6B',
+  sleeves: 'puff',
+  color: '#22307A',
   color2: '#F0C77E',
   pattern: 'stars',
   trim: true,
-  skin: SKINS[2],
+  skin: SKINS[1],
   hair: 'long',
-  hairColor: HAIR_COLORS[0],
+  hairColor: '#4A2A18',
   accessories: ['tiara'],
 }
 

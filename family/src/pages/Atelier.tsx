@@ -171,6 +171,42 @@ function PaintLayer({ look, scale, ink, size, onChange }: { look: Look; scale: n
   )
 }
 
+function StoryBackdrop() {
+  const bokeh = [
+    [12, 18, 34, 0.18], [78, 12, 44, 0.14], [64, 40, 26, 0.16], [22, 52, 30, 0.12], [88, 60, 36, 0.12], [40, 8, 20, 0.2],
+  ]
+  const twinkles = [
+    [10, 30, 16, 0], [86, 26, 12, 0.8], [70, 8, 10, 1.6], [18, 70, 9, 0.4], [92, 46, 8, 1.2], [50, 4, 7, 2],
+  ]
+  return (
+    <div aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+      {bokeh.map(([x, y, r, o], i) => (
+        <div key={i} style={{ position: 'absolute', left: `${x}%`, top: `${y}%`, width: r * 2, height: r * 2, marginLeft: -r, borderRadius: '50%', background: `radial-gradient(circle, rgba(170,160,255,${o * 2}), rgba(170,160,255,0) 70%)`, filter: 'blur(2px)' }} />
+      ))}
+      {twinkles.map(([x, y, s2, d], i) => (
+        <svg key={`t${i}`} width={s2 * 2} height={s2 * 2} viewBox="-10 -10 20 20" style={{ position: 'absolute', left: `${x}%`, top: `${y}%`, animation: `twinkle ${2.4 + i * 0.3}s ease-in-out ${d}s infinite`, filter: 'drop-shadow(0 0 6px #fff)' }}>
+          <path d="M0 -10 Q1 -1 10 0 Q1 1 0 10 Q-1 1 -10 0 Q-1 -1 0 -10 Z" fill="#fff" />
+        </svg>
+      ))}
+      <svg width="100%" height="120" viewBox="0 0 400 120" preserveAspectRatio="none" style={{ position: 'absolute', left: 0, bottom: -6 }}>
+        <defs>
+          <radialGradient id="cloudfill" cx="50%" cy="30%" r="70%">
+            <stop offset="0" stopColor="#fdfbf2" />
+            <stop offset=".45" stopColor="#cfe2ff" />
+            <stop offset="1" stopColor="#6f9ae6" />
+          </radialGradient>
+          <filter id="cloudsoft" x="-10%" y="-30%" width="120%" height="160%">
+            <feGaussianBlur stdDeviation="2.4" />
+          </filter>
+        </defs>
+        <g filter="url(#cloudsoft)" style={{ filter: 'url(#cloudsoft) drop-shadow(0 0 18px rgba(200,225,255,.7))' }}>
+          <path d="M-10 120 L-10 70 Q10 40 50 56 Q70 20 120 40 Q150 10 200 34 Q240 6 280 38 Q320 22 350 50 Q390 40 410 66 L410 120 Z" fill="url(#cloudfill)" />
+        </g>
+      </svg>
+    </div>
+  )
+}
+
 function Stage({ look, painting, ink, size, onPaint, runway }: { look: Look; painting: boolean; ink: string; size: number; onPaint: (d: string) => void; runway?: boolean }) {
   const box = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(0.8)
@@ -193,14 +229,11 @@ function Stage({ look, painting, ink, size, onPaint, runway }: { look: Look; pai
         height: H * scale + 24,
         borderRadius: 24,
         overflow: 'hidden',
-        background:
-          'radial-gradient(ellipse 50% 60% at 50% 30%, rgba(255,236,200,.22), transparent 70%), radial-gradient(ellipse 80% 20% at 50% 98%, rgba(240,199,126,.25), transparent 70%), linear-gradient(180deg, #1a1440 0%, #120f30 60%, #0b0a22 100%)',
-        border: '1px solid var(--card-border)',
+        background: 'radial-gradient(ellipse 60% 50% at 50% 35%, #2a3a9a 0%, #17206a 45%, #0c1240 100%)',
+        boxShadow: '0 30px 60px -30px rgba(0,0,12,.95)',
       }}
     >
-      {/* curtains */}
-      <div aria-hidden="true" style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 34, background: 'repeating-linear-gradient(90deg, #4e0f2d 0 8px, #6b1a3c 8px 16px)', opacity: 0.8, borderRight: '2px solid rgba(240,199,126,.4)' }} />
-      <div aria-hidden="true" style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 34, background: 'repeating-linear-gradient(90deg, #6b1a3c 0 8px, #4e0f2d 8px 16px)', opacity: 0.8, borderLeft: '2px solid rgba(240,199,126,.4)' }} />
+      <StoryBackdrop />
       <div style={{ position: 'absolute', left: '50%', top: 12, width: W, height: H, marginLeft: -W / 2, transform: `scale(${scale})`, transformOrigin: '50% 0' }}>
         <motion.div animate={runway ? { y: [0, -6, 0, -6, 0], rotate: [0, -1, 0, 1, 0] } : {}} transition={{ duration: 2.4, repeat: runway ? Infinity : 0 }}>
           <Figure look={look} width={W} runway={runway} />

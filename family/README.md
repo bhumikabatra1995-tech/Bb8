@@ -54,7 +54,14 @@ address in iCal format**, copy it into `GOOGLE_CALENDAR_ICS_URL` on Vercel,
 and redeploy. The address stays on the server, so the calendar stays
 private.
 
-### 4. Invite the family
+### 4. Phone notifications
+1. Re-run `supabase/schema.sql` in the SQL Editor (safe to run again; it adds the `push_subs` table).
+2. In Vercel → **Settings → Environment Variables**, add `VAPID_PRIVATE_KEY` (the private half of the
+   key pair whose public half is `VAPID_PUBLIC` in `src/state/push.ts`), then **Redeploy**.
+3. Each person taps **Turn on** on the Home screen. On iPhone (iOS 16.4+) the app must be opened from
+   the Home Screen icon first.
+
+### 5. Invite the family
 Send everyone the app's address, only inside the family. Then use **Share → Add to Home Screen**
 (iPhone, in Safari) or **⋮ → Add to Home screen** (Android) so it opens
 like a real app.

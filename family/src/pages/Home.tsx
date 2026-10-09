@@ -7,6 +7,7 @@ import { Glyph, type GlyphName } from '../components/Glyphs'
 import { FlyingOwl } from '../components/Atmosphere'
 import { DEFAULT_LOOK, Figure } from '../components/Figure'
 import { SceneArt } from '../components/SceneArt'
+import { NotifyCard } from '../components/NotifyCard'
 import { Page } from '../components/UI'
 import { memberById } from '../data/family'
 import { housePoints, itemsOf, nameOf, personalPoints, unreadFor, useStore } from '../state/store'
@@ -114,6 +115,8 @@ export default function Home() {
           Not saved yet, will keep trying · {s.syncError}
         </p>
       )}
+
+      <NotifyCard member={me.id} />
 
       {/* points strip */}
       <Link to="/me" className="panel" style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 18, textDecoration: 'none', color: 'var(--text)', padding: '12px 16px' }}>

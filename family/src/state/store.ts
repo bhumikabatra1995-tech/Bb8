@@ -103,6 +103,7 @@ const fromRow = {
   events: (r: any): FamilyEvent => ({ id: r.id, title: r.title, date: r.date, addedBy: r.added_by }),
   scores: (r: any): Score => ({ id: r.id, game: r.game, member: r.member, score: r.score, at: ts(r.at) }),
   items: (r: any): Item => ({ id: r.id, kind: r.kind, by: r.by_id, data: r.data ?? {}, at: ts(r.created_at), updatedAt: ts(r.updated_at) }),
+  push_subs: (r: any) => ({ id: r.id as string }),
   checkins: (r: any): CheckIn => ({ id: r.id, member: r.member, place: r.place, lat: r.lat, lon: r.lon, note: r.note ?? '', at: ts(r.at) }),
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -170,7 +171,7 @@ const pull = async () => {
   const order = { letters: 'sent_at', questions: 'created_at', answers: 'created_at', points: 'at', events: 'date', scores: 'at', checkins: 'at', items: 'updated_at' } as const
   try {
     const results = await Promise.all(
-      (Object.keys(order) as Table[]).map(async (table) => {
+      (Object.keys(order) as (keyof typeof order)[]).map(async (table) => {
         const { data, error } = await remote!.from(table).select('*').order(order[table], { ascending: table === 'events' }).limit(1000)
         if (error) throw error
         return [table, (data ?? []).map((r) => (fromRow[table] as (r: unknown) => { id: string })(r))] as const
@@ -229,6 +230,16 @@ export const startSync = () => {
   document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && schedulePull())
 }
 
+// ---- phone notifications ---------------------------------------------------
+
+type Notice = { to: Recipient; title: string; body?: string; url?: string; tag?: string }
+
+/** Ask the server to send a banner to the people concerned (never the sender). */
+const notify = (from: string, n: Notice) => {
+  if (!remote) return
+  fetch('/api/notify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ from, ...n }) }).catch(() => undefined)
+}
+
 // ---- actions ---------------------------------------------------------------
 
 const addPoints = (member: string, amount: number, reason: string) => {
@@ -252,6 +263,7 @@ export const actions = {
     set((s) => ({ letters: [l, ...s.letters] }))
     write('letters', { id: l.id, from_id: from, to_id: to, body, howler, sent_at: iso(l.sentAt), read_by: l.readBy })
     addPoints(from, POINTS.owl, 'Sent an owl')
+    notify(from, { to, title: howler ? `📣 A Howler from ${nameOf(from)}!` : `🦉 ${nameOf(from)} sent you an owl`, body: body.length > 90 ? `${body.slice(0, 90)}…` : body, url: `/owls/${l.id}`, tag: l.id })
   },
   markRead(letterId: string, me: string) {
     const l = state.letters.find((x) => x.id === letterId)
@@ -264,6 +276,7 @@ export const actions = {
     const q: Question = { id: uid(), askedBy: by, text, at: Date.now() }
     set((s) => ({ questions: [q, ...s.questions] }))
     write('questions', { id: q.id, asked_by: by, text, created_at: iso(q.at) })
+    notify(by, { to: 'all', title: `✨ ${nameOf(by)} asked the Pensieve`, body: text, url: `/pensieve/${q.id}` })
     addPoints(by, POINTS.question, 'Asked the Pensieve a question')
   },
   answer(questionId: string, by: string, text: string) {
@@ -304,12 +317,21 @@ export const actions = {
     const it: Item<T> = { id: uid(), kind, by, data, at: now, updatedAt: now }
     set((s) => ({ items: [it as Item, ...s.items] }))
     write('items', { id: it.id, kind, by_id: by, data, created_at: iso(now), updated_at: iso(now) })
+    const d = data as Record<string, unknown>
+    if (kind === 'drawing') notify(by, { to: 'all', title: `🎨 ${nameOf(by)} drew something`, body: 'Can you guess what it is?', url: `/games/pictionary/${it.id}` })
+    if (kind === 'design') notify(by, { to: 'all', title: `👗 ${nameOf(by)} designed “${String(d.name ?? 'a new look')}”`, body: 'See it on the runway', url: `/atelier/${it.id}` })
     return it
   },
   updateItem<T extends Record<string, unknown>>(id: string, data: T) {
     const now = Date.now()
     set((s) => ({ items: s.items.map((x) => (x.id === id ? { ...x, data, updatedAt: now } : x)) }))
     write('items', { data, updated_at: iso(now) }, 'update', id)
+  },
+  savePushSub(id: string, member: string, sub: PushSubscriptionJSON) {
+    write('push_subs', { id, member, endpoint: sub.endpoint, keys: sub.keys }, 'insert', id)
+  },
+  challengeNotice(from: string, to: string) {
+    notify(from, { to, title: `⚡ ${nameOf(from)} challenges you to a duel!`, body: 'Come to the duelling hall', url: '/games/duel' })
   },
   duelResult(member: string, opponent: string, won: boolean) {
     actions.recordScore('duel', member, won ? 1 : 0)

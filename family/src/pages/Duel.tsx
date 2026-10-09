@@ -80,6 +80,7 @@ export default function Duel() {
     const id = `${me.id}-${to}-${Date.now()}`
     setPending(to)
     lobby.current?.send({ type: 'broadcast', event: 'challenge', payload: { from: me.id, to, duelId: id } })
+    actions.challengeNotice(me.id, to)
   }
 
   const answer = (accept: boolean) => {

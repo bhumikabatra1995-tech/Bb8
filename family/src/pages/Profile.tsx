@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { Crest, Hourglass } from '../components/Art'
 import { Portrait } from '../components/Avatar'
+import { NotifyCard } from '../components/NotifyCard'
 import { Empty, Page, TopBar, timeAgo } from '../components/UI'
 import { memberById } from '../data/family'
 import { actions, bestScores, duelRecord, housePoints, personalPoints, rankInHouse, useStore } from '../state/store'
@@ -132,6 +133,8 @@ export default function Profile() {
           </ul>
         )}
       </section>
+
+      <NotifyCard member={me.id} compact />
 
       <div style={{ textAlign: 'center', marginTop: 22 }}>
         <button

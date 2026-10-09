@@ -1,13 +1,16 @@
 -- 33C & 34C — database schema for Supabase.
--- Run once in Supabase → SQL Editor. Before running, replace
--- CHANGE-ME-FAMILY-KEY (in the function below) with a long random phrase;
--- that phrase goes in everyone's join link: https://your-app.vercel.app/?key=<phrase>
+-- Paste the whole file into Supabase → SQL Editor and Run. Nothing to edit.
+--
+-- Optional lock: to allow only phones that opened the join link
+-- https://your-app.vercel.app/?key=<phrase>, replace `select true` below with
+--   select coalesce(current_setting('request.headers', true)::json ->> 'x-family-key', '') = '<phrase>'
+-- and run this file again.
 
 create extension if not exists pgcrypto;
 
 create or replace function public.family_ok() returns boolean
 language sql stable as $$
-  select coalesce(current_setting('request.headers', true)::json ->> 'x-family-key', '') = 'CHANGE-ME-FAMILY-KEY'
+  select true
 $$;
 
 create table if not exists public.letters (

@@ -1,13 +1,13 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 /**
- * Cloud sync is optional. With VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY set
- * and a family key present, everything is stored in Supabase and shared by
- * every phone. Without them the app still works, saving to this device only.
+ * Cloud sync is optional. With VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY set,
+ * everything is stored in Supabase and shared by every phone. Without them
+ * the app still works, saving to this device only.
  *
- * The family key is never baked into the code: it arrives once through the
- * join link (…/?key=XXXX), is remembered on the device, and is sent as the
- * `x-family-key` header that the database's row-level security checks.
+ * An optional family key (join link …/?key=XXXX) is sent as the
+ * `x-family-key` header, for families who lock the database to it (see
+ * supabase/schema.sql).
  */
 const KEY_STORE = 'family-key'
 
@@ -35,9 +35,9 @@ export const cloudConfigured = Boolean(url && anon)
 export const hasFamilyKey = Boolean(familyKey)
 
 export const remote: SupabaseClient | null =
-  url && anon && familyKey
+  url && anon
     ? createClient(url, anon, {
-        global: { headers: { 'x-family-key': familyKey } },
+        global: { headers: familyKey ? { 'x-family-key': familyKey } : {} },
         auth: { persistSession: false },
       })
     : null
